@@ -7,12 +7,12 @@ from datetime import datetime
 class ConnectAPI(ABC):
 
     @abstractmethod
-    def get_area(self):
+    def get_area_requests(self):
         """Получает список городов и регионов"""
         pass
 
     @abstractmethod
-    def get_request(self):
+    def get_requests(self):
         pass
 
     @abstractmethod
@@ -22,25 +22,45 @@ class ConnectAPI(ABC):
         pass
 
 
-class HeadHunterVacancy(ConnectAPI):
+class HeadHunterVacancies(ConnectAPI):
     BASE_URL_VACANCY = "https://api.hh.ru/vacancies"
     BASE_URL_AREAS = "https://api.hh.ru/areas"
 
-    def __init__(self, key_words):
+    def __init__(self, key_words, city):
         self.params = {
             "page": 0,
             "text": key_words,
-            "area": 2,
+            "area": self.get_id_city(city),
             "per_page": 50
         }
-        self.vacancy = []
+        self.vacancy = self.get_vacancy()
 
-    def get_area(self):
+    def get_area_requests(self):
         """Записывает список городов в файл"""
-        response_area = requests.get(self.BASE_URL_AREAS).json()
-        return response_area
+        response_area = requests.get(self.BASE_URL_AREAS).json()[0].get("areas")
+        with open("all_areas.json", "w", encoding="utf-8") as file:
+            json.dump(response_area, file, ensure_ascii=False, indent=4)
+        cities = []
+        for district in response_area:
+            for town in district["areas"]:
+                area = {
+                    "id": town["id"],
+                    "name": town["name"]
+                }
+                cities.append(area)
+        return cities
 
-    def get_request(self):
+    def get_id_city(self, name_city: str):
+        cities = self.get_area_requests()
+        for town in cities:
+            if name_city == "Москва":
+                return "1"
+            if name_city == "Санкт-Петербург":
+                return "2"
+            if name_city in town.values():
+                return town["id"]
+
+    def get_requests(self):
         response = requests.get(self.BASE_URL_VACANCY, params=self.params)
         if response.status_code != 200:
             raise Exception(f"Code = {response.status_code}")
@@ -48,20 +68,21 @@ class HeadHunterVacancy(ConnectAPI):
 
     def get_vacancy(self):
         """Получение списка вакансий по ключевому слову"""
-        page_count = self.get_request().get("pages")
+        vacancy = []
+        page_count = self.get_requests().get("pages")
         for page in range(page_count):
             self.params["page"] = page
-            response = self.get_request().get('items')
-            self.vacancy.extend(response)
-            print(f"Count page = {page+1} / {page_count}")
-        print(f"Найденно вакансий - {len(self.vacancy)}")
-        return self.vacancy
+            response = self.get_requests().get('items')
+            vacancy.extend(response)
+            print(f"Count page = {page + 1} / {page_count}")
+        print(f"Найденно вакансий - {len(vacancy)}")
+        return vacancy
 
     def get_new_format_vacancy(self):
         new_format = []
         for vacancy in self.vacancy:
             new_vacancy = {
-                "id": vacancy["id"],
+                "vacancy_id": vacancy["id"],
                 "name": vacancy["name"],
                 "salary_from": vacancy["salary"]["from"] if vacancy["salary"] else None,
                 "salary_to": vacancy["salary"]["to"] if vacancy["salary"] else None,
@@ -73,4 +94,33 @@ class HeadHunterVacancy(ConnectAPI):
             }
             new_format.append(new_vacancy)
         return new_format
+
+
+a = HeadHunterVacancies("python developer", "Ростов-на-Дону")
+print(a.get_new_format_vacancy())
+
+
+# Запусти !!!!!!!!!!!!!!!!
+
+# class Vacancy:
+#     def __init__(self, vacancy_id: str, name: str, salary_from: int, salary_to: int,
+#                  currency: str, url: str, employer: str, requirement: str, responsibility: str):
+#         self.vacancy_id = vacancy_id
+#         self.name = name
+#         self.salary_from = salary_from
+#         self.salary_to = salary_to
+#         self.currency = currency
+#         self.url = url
+#         self.employer = employer
+#         self.requirement = requirement
+#         self.responsibility = responsibility
+#
+#     def __str__(self):
+#         return (f"id - {self.vacancy_id}\n"
+#                 f"Вакансия - {self.name}\n"
+#                 f"Заработная плата от {self.salary_from} до {self.salary_to}\n"
+#                 f"Ссылка на вакансию - {self.url}\n"
+#                 f"Работодатель - {self.employer}\n"
+#                 f"Требования к соискателю - {self.requirement}\n"
+#                 f"Обязанности - {self.responsibility}\n")
 
