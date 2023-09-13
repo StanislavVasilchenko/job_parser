@@ -98,13 +98,14 @@ class HeadHunterVacancies(ConnectAPI):
 
 
 class Vacancy:
-    def __init__(self, vacancy_id: str, name: str, salary_from: int, salary_to: int,
-                 currency: str, url: str, employer: str, requirement: str, responsibility: str):
+    def __init__(self, vacancy_id: str = "", name: str = "", salary_from: int = 0, salary_to: int = 0,
+                 currency: str = "", url: str = "", employer: str = "", requirement: str = "",
+                 responsibility: str = ""):
         self.vacancy_id = vacancy_id
         self.name = name
-        self.salary_from = salary_from
-        self.salary_to = salary_to
-        self.currency = currency
+        self.salary_from = salary_from if salary_from is not None else "Не указано"
+        self.salary_to = salary_to if salary_to is not None else "Не указано"
+        self.currency = currency if currency is not None else ""
         self.url = url
         self.employer = employer
         self.requirement = requirement
@@ -124,5 +125,6 @@ class Vacancy:
             return self.salary_from >= other.salary_from
 
 
-a = HeadHunterVacancies("python developer", "Ростов-на-Дону")
-print(a.vacancy)
+a = HeadHunterVacancies("python developer", "Волгоград")
+c = [print(Vacancy(**vac)) for vac in a.vacancy]
+s = Vacancy()
