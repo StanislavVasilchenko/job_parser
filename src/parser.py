@@ -125,6 +125,23 @@ class Vacancy:
             return self.salary_from >= other.salary_from
 
 
-a = HeadHunterVacancies("python developer", "Волгоград")
-c = [print(Vacancy(**vac)) for vac in a.vacancy]
-s = Vacancy()
+class WorkingWithFile(ABC):
+
+    @abstractmethod
+    def reader(self):
+        pass
+
+    @abstractmethod
+    def writer(self):
+        pass
+
+    def filter(self):
+        pass
+
+    def deleter(self):
+        pass
+
+
+# a = HeadHunterVacancies("python developer", "Волгоград")
+# c = [print(Vacancy(**vac)) for vac in a.vacancy]
+# s = Vacancy()
