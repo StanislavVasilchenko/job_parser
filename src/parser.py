@@ -33,7 +33,7 @@ class HeadHunterVacancies(ConnectAPI):
             "area": self.get_id_city(city),
             "per_page": 50
         }
-        self.vacancy = self.get_vacancy()
+        self.vacancy = self.get_new_format_vacancy()
 
     def get_area_requests(self):
         """Записывает список городов в файл"""
@@ -80,7 +80,8 @@ class HeadHunterVacancies(ConnectAPI):
 
     def get_new_format_vacancy(self):
         new_format = []
-        for vacancy in self.vacancy:
+        response = self.get_vacancy()
+        for vacancy in response:
             new_vacancy = {
                 "vacancy_id": vacancy["id"],
                 "name": vacancy["name"],
@@ -96,31 +97,35 @@ class HeadHunterVacancies(ConnectAPI):
         return new_format
 
 
-a = HeadHunterVacancies("python developer", "Ростов-на-Дону")
-print(a.get_new_format_vacancy())
-
-
 # Запусти !!!!!!!!!!!!!!!!
 
-# class Vacancy:
-#     def __init__(self, vacancy_id: str, name: str, salary_from: int, salary_to: int,
-#                  currency: str, url: str, employer: str, requirement: str, responsibility: str):
-#         self.vacancy_id = vacancy_id
-#         self.name = name
-#         self.salary_from = salary_from
-#         self.salary_to = salary_to
-#         self.currency = currency
-#         self.url = url
-#         self.employer = employer
-#         self.requirement = requirement
-#         self.responsibility = responsibility
-#
-#     def __str__(self):
-#         return (f"id - {self.vacancy_id}\n"
-#                 f"Вакансия - {self.name}\n"
-#                 f"Заработная плата от {self.salary_from} до {self.salary_to}\n"
-#                 f"Ссылка на вакансию - {self.url}\n"
-#                 f"Работодатель - {self.employer}\n"
-#                 f"Требования к соискателю - {self.requirement}\n"
-#                 f"Обязанности - {self.responsibility}\n")
+class Vacancy:
+    def __init__(self, vacancy_id: str, name: str, salary_from: int, salary_to: int,
+                 currency: str, url: str, employer: str, requirement: str, responsibility: str):
+        self.vacancy_id = vacancy_id
+        self.name = name
+        self.salary_from = salary_from
+        self.salary_to = salary_to
+        self.currency = currency
+        self.url = url
+        self.employer = employer
+        self.requirement = requirement
+        self.responsibility = responsibility
+
+    def __str__(self):
+        return (f"id - {self.vacancy_id}\n"
+                f"Вакансия - {self.name}\n"
+                f"Заработная плата от {self.salary_from} до {self.salary_to} {self.currency}\n"
+                f"Ссылка на вакансию - {self.url}\n"
+                f"Работодатель - {self.employer}\n"
+                f"Требования к соискателю - {self.requirement}\n"
+                f"Обязанности - {self.responsibility}\n")
+
+    def __ge__(self, other):
+        if self.salary_from and other.salary_from is not None:
+            return self.salary_from >= other.salary_from
+
+
+a = HeadHunterVacancies("python developer", "Ростов-на-Дону")
+print(a.vacancy)
 
