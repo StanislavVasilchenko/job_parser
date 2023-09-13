@@ -97,8 +97,6 @@ class HeadHunterVacancies(ConnectAPI):
         return new_format
 
 
-# Запусти !!!!!!!!!!!!!!!!
-
 class Vacancy:
     def __init__(self, vacancy_id: str, name: str, salary_from: int, salary_to: int,
                  currency: str, url: str, employer: str, requirement: str, responsibility: str):
@@ -128,4 +126,3 @@ class Vacancy:
 
 a = HeadHunterVacancies("python developer", "Ростов-на-Дону")
 print(a.vacancy)
-
