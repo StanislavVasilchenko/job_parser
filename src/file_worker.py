@@ -45,5 +45,16 @@ class FileWorker(WorkingWithFile):
         new_data = new_data[::-1]
         return new_data[:top]
 
+    def get_vacancy_by_salary(self, s_from: int, s_to: int):
+        data = self.read_from_file()
+        filtered_vacancy = []
+        for i in data:
+            if i.get("salary_from") in range(s_from, s_to+1) and i.get("salary_to") in range(s_from, s_to+1):
+                filtered_vacancy.append(Vacancy(**i))
+        [print(vac) for vac in filtered_vacancy]
+
     def deleter(self):
         pass
+
+# a = FileWorker()
+# a.get_vacancy_by_salary(30000, 100000)
