@@ -111,7 +111,6 @@ class HeadHunterVacancies(ConnectAPI):
 class SuperJobVacancies(ConnectAPI):
     API_KEY = os.getenv("SJ_API_KEY")
     BASE_URL_VACANCY = "https://api.superjob.ru/2.0/vacancies/"
-    BASE_URL_AREAS = "	https://api.superjob.ru/2.0/towns/"
 
     def __init__(self, key_words, city):
         self.params = {
@@ -128,7 +127,7 @@ class SuperJobVacancies(ConnectAPI):
         }
         # self.vacancy = self.get_new_format_vacancy()
 
-    def get_requests(self):
+    def get_requests(self) -> json:
         response = requests.get(self.BASE_URL_VACANCY, params=self.params, headers=self.headers)
         if response.status_code != 200:
             raise Exception(f"Code = {response.status_code}")
@@ -136,8 +135,17 @@ class SuperJobVacancies(ConnectAPI):
         #     json.dump(response.json(), file, ensure_ascii=False, indent=4)
         return response.json()
 
-    def get_vacancy(self):
-        pass
+    def get_vacancy(self) -> list:
+        all_vacancies = []
+        for page in range(100):
+            self.params["page"] = page
+            if self.get_requests().get("more"):
+                vacancies = self.get_requests()["objects"]
+                all_vacancies.extend(vacancies)
+            else:
+                break
+        return all_vacancies
+
 
     def get_new_format_vacancy(self):
         pass
@@ -176,4 +184,4 @@ class Vacancy:
 
 
 a = SuperJobVacancies("Программист", "Москва")
-a.get_requests()
+a.get_vacancy()
