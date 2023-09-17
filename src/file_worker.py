@@ -7,6 +7,7 @@ class WorkingWithFile(ABC):
 
     @abstractmethod
     def read_from_file(self):
+
         pass
 
     @abstractmethod
@@ -18,12 +19,12 @@ class WorkingWithFile(ABC):
         pass
 
     @abstractmethod
-    def deleter(self):
+    def get_vacancies_by_key_words(self,key_words):
         pass
 
 
 class FileWorker(WorkingWithFile):
-    def __init__(self, file_name: str = "../vacancy.json"):
+    def __init__(self, file_name: str = "vacancy.json"):
         self.file_name = file_name
 
     def read_from_file(self):
@@ -45,16 +46,23 @@ class FileWorker(WorkingWithFile):
         new_data = new_data[::-1]
         return new_data[:top]
 
-    def get_vacancy_by_salary(self, s_from: int, s_to: int):
+    def get_vacancy_by_salary(self, s_from: int, s_to: int) -> list:
         data = self.read_from_file()
         filtered_vacancy = []
-        for i in data:
-            if i.get("salary_from") in range(s_from, s_to+1) and i.get("salary_to") in range(s_from, s_to+1):
-                filtered_vacancy.append(Vacancy(**i))
-        [print(vac) for vac in filtered_vacancy]
+        for salary in data:
+            if (salary.get("salary_from") in range(s_from, s_to + 1) and
+                    salary.get("salary_to") in range(s_from, s_to + 1)):
+                filtered_vacancy.append(Vacancy(**salary))
+        return filtered_vacancy
 
-    def deleter(self):
-        pass
+    def get_vacancies_by_key_words(self, key_words: list):
+        all_vacancies = self.read_from_file()
+        vacancies_by_key_words = [vacancy for word in key_words
+                                  for vacancy in all_vacancies
+                                  if word in vacancy["requirement"]]
+        return vacancies_by_key_words
 
 # a = FileWorker()
-# a.get_vacancy_by_salary(30000, 100000)
+# b = a.get_vacancies_by_key_words(["СУБД"])
+# print(b)
+# print(len(b))
