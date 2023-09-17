@@ -1,5 +1,5 @@
 import json
-
+from src.exceptions import FailedConnection
 import requests
 from abc import ABC, abstractmethod
 import os
@@ -7,11 +7,6 @@ import os
 
 class ConnectAPI(ABC):
 
-    # @abstractmethod
-    # def get_area_requests(self):
-    #     """Получает список городов и регионов"""
-    #     pass
-    #
     @abstractmethod
     def get_requests(self):
         """Подключается к сервису с вакансиями"""
@@ -76,7 +71,7 @@ class HeadHunterVacancies(ConnectAPI):
     def get_requests(self):
         response = requests.get(self.BASE_URL_VACANCY, params=self.params)
         if response.status_code != 200:
-            raise Exception(f"Code = {response.status_code}")
+            raise FailedConnection(f"Ошибка запроса! Статус ответа: {response.status_code}")
         return response.json()
 
     def get_vacancy(self):
@@ -116,8 +111,7 @@ class SuperJobVacancies(ConnectAPI):
         self.params = {
             "town": city,
             "keyword": key_words,
-            "page": 0,
-
+            "page": 0
         }
         self.headers = {
             "Host": "api.superjob.ru",
@@ -125,14 +119,12 @@ class SuperJobVacancies(ConnectAPI):
             "Authorization": "Bearer r.000000010000001.example.access_token",
             "Content-Type": "application/x-www-form-urlencoded"
         }
-        # self.vacancy = self.get_new_format_vacancy()
+        self.vacancy = self.get_new_format_vacancy()
 
     def get_requests(self) -> json:
         response = requests.get(self.BASE_URL_VACANCY, params=self.params, headers=self.headers)
         if response.status_code != 200:
-            raise Exception(f"Code = {response.status_code}")
-        # with open("SJareas.json", "w", encoding="utf-8") as file:
-        #     json.dump(response.json(), file, ensure_ascii=False, indent=4)
+            raise FailedConnection(f"Ошибка запроса! Статус ответа: {response.status_code}")
         return response.json()
 
     def get_vacancy(self) -> list:
@@ -144,11 +136,27 @@ class SuperJobVacancies(ConnectAPI):
                 all_vacancies.extend(vacancies)
             else:
                 break
+        # with open("SJareas.json", "w", encoding="utf-8") as file:
+        #     json.dump(all_vacancies, file, ensure_ascii=False, indent=4)
         return all_vacancies
 
-
     def get_new_format_vacancy(self):
-        pass
+        new_format = []
+        response = self.get_vacancy()
+        for vacancy in response:
+            new_vacancy = {
+                "vacancy_id": vacancy["id"],
+                "name": vacancy["profession"],
+                "salary_from": vacancy["payment_from"],
+                "salary_to": vacancy["payment_to"],
+                "currency": vacancy["currency"],
+                "url": vacancy["link"],
+                "employer": vacancy["client"].get("title"),
+                "requirement": vacancy["candidat"],
+                "responsibility": vacancy["vacancyRichText"]
+            }
+            new_format.append(new_vacancy)
+        return new_format
 
 
 class Vacancy:
@@ -168,7 +176,8 @@ class Vacancy:
     def __str__(self):
         return (f"id - {self.vacancy_id}\n"
                 f"Вакансия - {self.name}\n"
-                f"Заработная плата от {self.salary_from} до {self.salary_to} {self.currency}\n"
+                f"Заработная плата от {self.salary_from if self.salary_from != 0 else 'Не указано'}"
+                f" до {self.salary_to} {self.currency}\n"
                 f"Ссылка на вакансию - {self.url}\n"
                 f"Работодатель - {self.employer}\n"
                 f"Требования к соискателю - {self.requirement}\n"
@@ -182,6 +191,7 @@ class Vacancy:
         if self.salary_from and other.salary_from is not None:
             return self.salary_from < other.salary_from
 
-
-a = SuperJobVacancies("Программист", "Москва")
-a.get_vacancy()
+# a = HeadHunterVacancies("Программист", "Волгоград")
+# b = a.get_new_format_vacancy()
+# with open("newSJareas.json", "w", encoding="utf-8") as file:
+#     json.dump(b, file, ensure_ascii=False, indent=4)
