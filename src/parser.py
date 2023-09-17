@@ -127,14 +127,6 @@ class SuperJobVacancies(ConnectAPI):
             "Content-Type": "application/x-www-form-urlencoded"
         }
         # self.vacancy = self.get_new_format_vacancy()
-    # def get_area_requests(self):
-    #     params = {
-    #         "X-Api-App-Id": self.API_KEY,
-    #         "town": "Ставрополь"
-    #     }
-    #     responce = requests.get(self.BASE_URL_AREAS, params=params).json()
-    #     with open("SJareas.json", "w", encoding="utf-8") as file:
-    #         json.dump(responce, file, ensure_ascii=False, indent=4)
 
     def get_requests(self):
         response = requests.get(self.BASE_URL_VACANCY, params=self.params, headers=self.headers)
