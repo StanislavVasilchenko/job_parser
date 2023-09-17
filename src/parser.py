@@ -1,25 +1,39 @@
-import requests
 import json
+
+import requests
 from abc import ABC, abstractmethod
 import os
-from datetime import datetime
 
 
 class ConnectAPI(ABC):
 
-    @abstractmethod
-    def get_area_requests(self):
-        """Получает список городов и регионов"""
-        pass
-
+    # @abstractmethod
+    # def get_area_requests(self):
+    #     """Получает список городов и регионов"""
+    #     pass
+    #
     @abstractmethod
     def get_requests(self):
+        """Подключается к сервису с вакансиями"""
         pass
 
     @abstractmethod
     def get_vacancy(self):
-        """Ищет объявления о вакансиях по ключевым словам в указанном регионе.
-        По умолчанию ищет во всех регионах"""
+        """Получает вакансии"""
+        pass
+
+    @abstractmethod
+    def get_new_format_vacancy(self):
+        """Форматирует список вакансий к виду:
+        "vacancy_id": id,
+        "name": Название вакансии,
+        "salary_from": Оклад от, если указан,
+        "salary_to": Оклад до, если указан,
+        "currency": Название валюты,
+        "url": Ссылка на вакансию,
+        "employer": Наименование работодателя,
+        "requirement": Требования к соискателю,
+        "responsibility": Краткое описание должностных обязанностей"""
         pass
 
 
@@ -39,8 +53,6 @@ class HeadHunterVacancies(ConnectAPI):
     def get_area_requests(self):
         """Записывает список городов в файл"""
         response_area = requests.get(self.BASE_URL_AREAS).json()[0].get("areas")
-        with open("all_areas.json", "w", encoding="utf-8") as file:
-            json.dump(response_area, file, ensure_ascii=False, indent=4)
         cities = []
         for district in response_area:
             for town in district["areas"]:
@@ -56,9 +68,9 @@ class HeadHunterVacancies(ConnectAPI):
         for town in cities:
             if name_city == "Москва":
                 return "1"
-            if name_city == "Санкт-Петербург":
+            elif name_city == "Санкт-Петербург":
                 return "2"
-            if name_city in town.values():
+            elif name_city in town.values():
                 return town["id"]
 
     def get_requests(self):
@@ -68,15 +80,13 @@ class HeadHunterVacancies(ConnectAPI):
         return response.json()
 
     def get_vacancy(self):
-        """Получение списка вакансий по ключевому слову"""
         vacancy = []
         page_count = self.get_requests().get("pages")
         for page in range(page_count):
             self.params["page"] = page
             response = self.get_requests().get('items')
             vacancy.extend(response)
-            print(f"Count page = {page + 1} / {page_count}")
-        print(f"Найденно вакансий - {len(vacancy)}")
+        print(f"Найдено вакансий - {len(vacancy)}")
         return vacancy
 
     def get_new_format_vacancy(self):
@@ -96,6 +106,49 @@ class HeadHunterVacancies(ConnectAPI):
             }
             new_format.append(new_vacancy)
         return new_format
+
+
+class SuperJobVacancies(ConnectAPI):
+    API_KEY = os.getenv("SJ_API_KEY")
+    BASE_URL_VACANCY = "https://api.superjob.ru/2.0/vacancies/"
+    BASE_URL_AREAS = "	https://api.superjob.ru/2.0/towns/"
+
+    def __init__(self, key_words, city):
+        self.params = {
+            "town": city,
+            "keyword": key_words,
+            "page": 0,
+
+        }
+        self.headers = {
+            "Host": "api.superjob.ru",
+            "X-Api-App-Id": self.API_KEY,
+            "Authorization": "Bearer r.000000010000001.example.access_token",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+        # self.vacancy = self.get_new_format_vacancy()
+    # def get_area_requests(self):
+    #     params = {
+    #         "X-Api-App-Id": self.API_KEY,
+    #         "town": "Ставрополь"
+    #     }
+    #     responce = requests.get(self.BASE_URL_AREAS, params=params).json()
+    #     with open("SJareas.json", "w", encoding="utf-8") as file:
+    #         json.dump(responce, file, ensure_ascii=False, indent=4)
+
+    def get_requests(self):
+        response = requests.get(self.BASE_URL_VACANCY, params=self.params, headers=self.headers)
+        if response.status_code != 200:
+            raise Exception(f"Code = {response.status_code}")
+        # with open("SJareas.json", "w", encoding="utf-8") as file:
+        #     json.dump(response.json(), file, ensure_ascii=False, indent=4)
+        return response.json()
+
+    def get_vacancy(self):
+        pass
+
+    def get_new_format_vacancy(self):
+        pass
 
 
 class Vacancy:
@@ -130,56 +183,5 @@ class Vacancy:
             return self.salary_from < other.salary_from
 
 
-class WorkingWithFile(ABC):
-
-    @abstractmethod
-    def read_from_file(self):
-        pass
-
-    @abstractmethod
-    def write_in_file(self, vacancy):
-        pass
-
-    @abstractmethod
-    def get_top_vacancy(self, top):
-        pass
-
-    @abstractmethod
-    def deleter(self):
-        pass
-
-
-class Interaction(WorkingWithFile, ABC):
-    def __init__(self, file_name: str = "vacancy.json"):
-        self.file_name = file_name
-
-    def read_from_file(self):
-        with open(self.file_name, "r", encoding="utf-8") as file:
-            result = json.load(file)
-        return result
-
-    def write_in_file(self, vacancy):
-        with open(self.file_name, "w", encoding="utf-8") as file:
-            json.dump(vacancy, file, ensure_ascii=False, indent=4)
-
-    def get_top_vacancy(self, top):
-        data = self.read_from_file()
-        new_data = [Vacancy(**x) for x in data]
-        for i in range(len(new_data)):
-            for j in range(0, len(data)-1):
-                if new_data[j] > new_data[j+1]:
-                    new_data[j], new_data[j+1] = new_data[j+1], new_data[j]
-        new_data = new_data[::-1]
-        return new_data[:top]
-
-    def deleter(self):
-        pass
-
-
-a = HeadHunterVacancies("python developer", "Волгоград")
-# path = "/job_parser/file/vac.json"
-# with open(path, "w", encoding="utf-8") as file:
-#     json.dump(a.vacancy, file, ensure_ascii=False, indent=4)
-b = Interaction()
-k = b.get_top_vacancy(5)
-[print(x) for x in k]
+a = SuperJobVacancies("Программист", "Москва")
+a.get_requests()
