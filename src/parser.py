@@ -14,7 +14,7 @@ class ConnectAPI(ABC):
 
     @abstractmethod
     def get_vacancy(self):
-        """Получает вакансии"""
+        """Получает вакансии и возвращает список"""
         pass
 
     @abstractmethod
@@ -45,8 +45,8 @@ class HeadHunterVacancies(ConnectAPI):
         }
         self.vacancy = self.get_new_format_vacancy()
 
-    def get_area_requests(self):
-        """Записывает список городов в файл"""
+    def get_area_requests(self) -> list[dict]:
+        """Получает список городов и их id"""
         response_area = requests.get(self.BASE_URL_AREAS).json()[0].get("areas")
         cities = []
         for district in response_area:
@@ -58,7 +58,8 @@ class HeadHunterVacancies(ConnectAPI):
                 cities.append(area)
         return cities
 
-    def get_id_city(self, name_city: str):
+    def get_id_city(self, name_city: str) -> str:
+        """Принимает на вход название города и возвращает его id"""
         cities = self.get_area_requests()
         for town in cities:
             if name_city == "Москва":
@@ -68,13 +69,13 @@ class HeadHunterVacancies(ConnectAPI):
             elif name_city in town.values():
                 return town["id"]
 
-    def get_requests(self):
+    def get_requests(self) -> json:
         response = requests.get(self.BASE_URL_VACANCY, params=self.params)
         if response.status_code != 200:
             raise FailedConnection(f"Ошибка запроса! Статус ответа: {response.status_code}")
         return response.json()
 
-    def get_vacancy(self):
+    def get_vacancy(self) -> list[dict]:
         vacancy = []
         page_count = self.get_requests().get("pages")
         for page in range(page_count):
@@ -84,7 +85,7 @@ class HeadHunterVacancies(ConnectAPI):
         print(f"Найдено вакансий - {len(vacancy)}")
         return vacancy
 
-    def get_new_format_vacancy(self):
+    def get_new_format_vacancy(self) -> list[dict]:
         new_format = []
         response = self.get_vacancy()
         for vacancy in response:
@@ -127,7 +128,7 @@ class SuperJobVacancies(ConnectAPI):
             raise FailedConnection(f"Ошибка запроса! Статус ответа: {response.status_code}")
         return response.json()
 
-    def get_vacancy(self) -> list:
+    def get_vacancy(self) -> list[dict]:
         all_vacancies = []
         for page in range(100):
             self.params["page"] = page
@@ -136,11 +137,9 @@ class SuperJobVacancies(ConnectAPI):
                 all_vacancies.extend(vacancies)
             else:
                 break
-        # with open("SJareas.json", "w", encoding="utf-8") as file:
-        #     json.dump(all_vacancies, file, ensure_ascii=False, indent=4)
         return all_vacancies
 
-    def get_new_format_vacancy(self):
+    def get_new_format_vacancy(self) -> list[dict]:
         new_format = []
         response = self.get_vacancy()
         for vacancy in response:
