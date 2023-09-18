@@ -57,12 +57,16 @@ class FileWorker(WorkingWithFile):
 
     def get_vacancies_by_key_words(self, key_words: list):
         all_vacancies = self.read_from_file()
-        vacancies_by_key_words = [vacancy for word in key_words
-                                  for vacancy in all_vacancies
-                                  if word in vacancy["requirement"]]
+        vacancies_by_key_words = []
+        for vacancy in all_vacancies:
+            if vacancy.get("requirement") is not None:
+                for word in key_words:
+                    if word in vacancy.get("requirement"):
+                        vacancies_by_key_words.append(Vacancy(**vacancy))
+
         return vacancies_by_key_words
 
 # a = FileWorker()
-# b = a.get_vacancies_by_key_words(["СУБД"])
+# b = a.get_vacancies_by_key_words(["python"])
 # print(b)
 # print(len(b))
