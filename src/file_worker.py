@@ -6,20 +6,39 @@ from src.parser import Vacancy
 class WorkingWithFile(ABC):
 
     @abstractmethod
-    def read_from_file(self):
-
+    def read_from_file(self) -> json:
+        """Считывает данные и файла и возвращает json"""
         pass
 
     @abstractmethod
-    def write_in_file(self, vacancy):
+    def write_in_file(self, vacancy) -> None:
+        """Принимает на вход данные и записывает их в файл.
+        По умолчанию имя файла vacancy.json"""
         pass
 
     @abstractmethod
-    def get_top_vacancy(self, top):
+    def get_top_vacancy(self, top) -> list[Vacancy]:
+        """Получает на вход число вакансий top:int
+        сортирует вакансии по размеру заработной платы от (если указанно),
+        и возвращает список с объектами вакансий Vacancy"""
         pass
 
     @abstractmethod
-    def get_vacancies_by_key_words(self,key_words):
+    def get_vacancy_by_salary(self, s_from: int, s_to: int) -> list[Vacancy]:
+        """Получает на вход два числа:
+        s_from: int - диапазон поиска от,
+        s_to: int - диапазон поиска до,
+        выбирает вакансии в которых указана ЗП в заданном диапазоне ОТ и ДО,
+        возвращает список с объектами вакансий Vacancy
+        """
+        pass
+
+    @abstractmethod
+    def get_vacancies_by_key_words(self, key_words: str) -> list[Vacancy]:
+        """Получает на вход слово или несколько ключевых слов
+        и ищет совпадение в полях описания вакансии
+        возвращает список с объектами вакансий Vacancy
+        """
         pass
 
 
@@ -27,7 +46,7 @@ class FileWorker(WorkingWithFile):
     def __init__(self, file_name: str = "vacancy.json"):
         self.file_name = file_name
 
-    def read_from_file(self):
+    def read_from_file(self) -> json:
         with open(self.file_name, "r", encoding="utf-8") as file:
             result = json.load(file)
         return result
@@ -36,7 +55,7 @@ class FileWorker(WorkingWithFile):
         with open(self.file_name, "w", encoding="utf-8") as file:
             json.dump(vacancy, file, ensure_ascii=False, indent=4)
 
-    def get_top_vacancy(self, top):
+    def get_top_vacancy(self, top: int) -> list[Vacancy]:
         data = self.read_from_file()
         new_data = [Vacancy(**x) for x in data]
         for i in range(len(new_data)):
@@ -55,7 +74,7 @@ class FileWorker(WorkingWithFile):
                 filtered_vacancy.append(Vacancy(**salary))
         return filtered_vacancy
 
-    def get_vacancies_by_key_words(self, key_words: list):
+    def get_vacancies_by_key_words(self, key_words: list) -> list:
         all_vacancies = self.read_from_file()
         vacancies_by_key_words = []
         for vacancy in all_vacancies:
@@ -65,8 +84,3 @@ class FileWorker(WorkingWithFile):
                         vacancies_by_key_words.append(Vacancy(**vacancy))
 
         return vacancies_by_key_words
-
-# a = FileWorker()
-# b = a.get_vacancies_by_key_words(["python"])
-# print(b)
-# print(len(b))
