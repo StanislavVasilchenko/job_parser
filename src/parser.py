@@ -1,8 +1,7 @@
 import json
-from src.exceptions import FailedConnection
+from src.exceptions import FailedConnection, CityNotFound
 import requests
 from abc import ABC, abstractmethod
-import os
 
 
 class ConnectAPI(ABC):
@@ -33,6 +32,7 @@ class ConnectAPI(ABC):
 
 
 class HeadHunterVacancies(ConnectAPI):
+    """Класс для работы с сервисом Head Hunter"""
     BASE_URL_VACANCY = "https://api.hh.ru/vacancies"
     BASE_URL_AREAS = "https://api.hh.ru/areas"
 
@@ -66,7 +66,7 @@ class HeadHunterVacancies(ConnectAPI):
                 return "1"
             elif name_city == "Санкт-Петербург":
                 return "2"
-            elif name_city in town.values():
+            if name_city in town.values():
                 return town["id"]
 
     def get_requests(self) -> json:
@@ -82,7 +82,6 @@ class HeadHunterVacancies(ConnectAPI):
             self.params["page"] = page
             response = self.get_requests().get('items')
             vacancy.extend(response)
-        print(f"Найдено вакансий - {len(vacancy)}")
         return vacancy
 
     def get_new_format_vacancy(self) -> list[dict]:
@@ -103,12 +102,19 @@ class HeadHunterVacancies(ConnectAPI):
             new_format.append(new_vacancy)
         return new_format
 
+    def __add__(self, other):
+        return self.vacancy + other.vacancy
+
+    def __len__(self):
+        return len(self.vacancy)
+
 
 class SuperJobVacancies(ConnectAPI):
-    API_KEY = os.getenv("SJ_API_KEY")
+    """Класс для работы с сервисом Super Job"""
     BASE_URL_VACANCY = "https://api.superjob.ru/2.0/vacancies/"
 
-    def __init__(self, key_words, city):
+    def __init__(self, secret_key, key_words, city):
+        self.secret_key = secret_key
         self.params = {
             "town": city,
             "keyword": key_words,
@@ -116,7 +122,7 @@ class SuperJobVacancies(ConnectAPI):
         }
         self.headers = {
             "Host": "api.superjob.ru",
-            "X-Api-App-Id": self.API_KEY,
+            "X-Api-App-Id": self.secret_key,
             "Authorization": "Bearer r.000000010000001.example.access_token",
             "Content-Type": "application/x-www-form-urlencoded"
         }
@@ -151,14 +157,22 @@ class SuperJobVacancies(ConnectAPI):
                 "currency": vacancy["currency"],
                 "url": vacancy["link"],
                 "employer": vacancy["client"].get("title"),
-                "requirement": vacancy["candidat"],
+                "requirement": vacancy["candidat"] if not None else " ",
                 "responsibility": vacancy["vacancyRichText"]
             }
             new_format.append(new_vacancy)
         return new_format
 
+    def __add__(self, other):
+        return self.vacancy + other.vacancy
+
+    def __len__(self):
+        return len(self.vacancy)
+
 
 class Vacancy:
+    """Класс для работы с вакансиями"""
+
     def __init__(self, vacancy_id: str = "", name: str = "", salary_from: int = 0, salary_to: int = 0,
                  currency: str = "", url: str = "", employer: str = "", requirement: str = "",
                  responsibility: str = ""):
@@ -169,7 +183,7 @@ class Vacancy:
         self.currency = currency if currency is not None else ""
         self.url = url
         self.employer = employer
-        self.requirement = requirement
+        self.requirement = requirement if requirement is not None else " "
         self.responsibility = responsibility
 
     def __str__(self):
@@ -179,7 +193,7 @@ class Vacancy:
                 f" до {self.salary_to} {self.currency}\n"
                 f"Ссылка на вакансию - {self.url}\n"
                 f"Работодатель - {self.employer}\n"
-                f"Требования к соискателю - {self.requirement}\n"
+                f"Требования к соискателю - {self.requirement.strip()}\n"
                 f"Обязанности - {self.responsibility}\n")
 
     def __gt__(self, other):
@@ -189,8 +203,3 @@ class Vacancy:
     def __lt__(self, other):
         if self.salary_from and other.salary_from is not None:
             return self.salary_from < other.salary_from
-
-# a = HeadHunterVacancies("Программист", "Волгоград")
-# b = a.get_new_format_vacancy()
-# with open("newSJareas.json", "w", encoding="utf-8") as file:
-#     json.dump(b, file, ensure_ascii=False, indent=4)
