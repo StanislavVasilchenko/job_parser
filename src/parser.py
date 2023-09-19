@@ -1,5 +1,5 @@
 import json
-from src.exceptions import FailedConnection, CityNotFound
+from src.exceptions import FailedConnection
 import requests
 from abc import ABC, abstractmethod
 
